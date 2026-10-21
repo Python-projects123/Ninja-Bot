@@ -1,0 +1,26 @@
+name: Trigger Ninja Playwright Bot
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Automatically runs the bot script every 1 hour
+  workflow_dispatch: # Adds a manual "Run" button to your GitHub UI
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies & Chromium
+        run: |
+          pip install -r requirements.txt
+          playwright install chromium
+
+      - name: Execute Playwright Automation
+        run: python main.py
