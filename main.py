@@ -1,11 +1,12 @@
 from playwright.sync_api import sync_playwright
 import time
 
-# FIXED: Explicitly forced the correct 'ninja.' subdomain prefix right here
-BASE_URL = "https://ninja.greninja.xyz"
+# Core Target Server Configuration URL
+BASE_URL = "https://greninja.xyz"
 
-# REMINDER: Alter this username string to a totally new value before every single test run
-USERNAME = "ninja_runner_v16" 
+# CRITICAL REMINDER: You must change the username string value on the line below 
+# before EVERY single run, or the database will crash with a duplicate error!
+USERNAME = "ninja_final_success_01" 
 PASSWORD = "SecurePassword123!"
 
 def create_account():
@@ -22,125 +23,69 @@ def create_account():
         )
         page = context.new_page()
         
-        # 1. Access Main Portal
+        # 1. Load the Landing Page
         print(f"Connecting to host target portal: {BASE_URL}")
         page.goto(BASE_URL, wait_until="networkidle")
         time.sleep(2)
 
-        # 2. Fire Signup Modal Trigger
-        print("Clicking the primary coral banner 'Join' action target button...")
-        join_selectors = [
-            "div.banner button:has-text('Join')",
-            "button:has-text('Join')",
-            "a:has-text('Join')",
-            "text=Join Ninja"
-        ]
-        
-        clicked_join = False
-        for selector in join_selectors:
-            try:
-                target = page.locator(selector).first
-                if target.count() > 0 and target.is_visible():
-                    target.click()
-                    clicked_join = True
-                    break
-            except:
-                continue
-
-        if not clicked_join:
-            print("Banner selection hidden. Defaulting to navigation header fallback link...")
+        # 2. Click the Visual "Join" Button inside the main Red Banner Zone
+        print("Locating the visual 'Join' button inside the banner container...")
+        try:
+            page.locator("div.banner button:has-text('Join')").first.click()
+            print("-> Successfully triggered signup modal.")
+        except:
+            print("Banner element blocked from direct focus. Using navbar link fallback...")
             page.get_by_text("Join Ninja", exact=True).first.click()
 
-        # Wait for wizard layout card to slide in
+        # Wait for the modal box to render completely
         page.wait_for_load_state("networkidle")
         time.sleep(3)
 
-        # 3. Complete Step 1: User Account Identification Parameters
-        print("Processing Step 1 registration credential forms...")
+        # 3. Enter Credentials inside the Card inputs
+        print("Entering account registration credentials...")
         
-        user_input = page.locator("input[placeholder*='Username'], input[id*='user']").first
-        user_input.wait_for(state="visible", timeout=10000)
-        user_input.fill(USERNAME)
+        # Target the Username placeholder field securely
+        username_field = page.locator("input[placeholder*='Username'], input[id*='user']").first
+        username_field.wait_for(state="visible", timeout=10000)
+        username_field.fill(USERNAME)
+        print(f"-> Typed Username: {USERNAME}")
 
-        # Identify password slots and distribute strings safely
+        # Distribute password tokens safely into both slots
         password_slots = page.locator("input[type='password']")
         if password_slots.count() >= 2:
             password_slots.nth(0).fill(PASSWORD)
             password_slots.nth(1).fill(PASSWORD)
+            print("-> Typed passwords into standard password fields.")
         else:
             page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
             page.get_by_placeholder("Type password again").first.fill(PASSWORD)
-
-        time.sleep(1)
-
-        # Submit Step 1 
-        print("Advancing past credential selection layer...")
-        next_btn_1 = page.locator("button:has-text('Next'), .next-btn, input[type='submit']").first
-        next_btn_1.click()
-        
-        # Safe structural pause to allow the layout engine to swap views
-        page.wait_for_load_state("networkidle")
-        time.sleep(4)
-
-        # 4. Complete Step 2: Country, Birth Month/Year, and Gender Validation Fields
-        print("Processing Step 2 user meta profiling forms...")
-        
-        # Fill selection dropdowns (Country, Month, Year) by matching structural options safely
-        dropdowns = page.locator("select")
-        if dropdowns.count() > 0:
-            print(f"Detected {dropdowns.count()} configuration select nodes. Assigning values...")
-            for i in range(dropdowns.count()):
-                box = dropdowns.nth(i)
-                if box.is_visible():
-                    try:
-                        # Selects the second valid structural index item in the drop-down element
-                        box.select_option(index=1)
-                    except:
-                        continue
-        
-        # Handle secondary floating text boxes if the platform asks for a manual email input
-        text_fields = page.locator("input[type='text'], input:not([type])")
-        if text_fields.count() > 0:
-            for i in range(text_fields.count()):
-                field = text_fields.nth(i)
-                if field.is_visible() and field.input_value() == "":
-                    field.fill("automation_runner_bot@example.com")
-
-        # Select gender radio bubbles or checking markers if exposed on screen
-        gender_options = page.locator("input[type='radio'], input[type='checkbox']")
-        if gender_options.count() > 0:
-            for i in range(gender_options.count()):
-                radio = gender_options.nth(i)
-                if radio.is_visible():
-                    try:
-                        radio.check()
-                        break # Check one valid parameter box option and skip out
-                    except:
-                        continue
+            print("-> Typed passwords using fallback placeholders.")
 
         time.sleep(2)
 
-        # Submit Step 2 Profile Setup
-        print("Executing final wizard account compilation sequence...")
-        next_btn_2 = page.locator("button:has-text('Next'), button:has-text('Submit'), button[type='submit']").first
-        if next_btn_2.count() > 0 and next_btn_2.is_visible():
-            next_btn_2.click()
-        else:
-            print("Target submit button obscured. Forcing transaction via hardware keyboard event route...")
-            page.keyboard.press("Enter")
+        # 4. Click the bright coral-red "Next" submit button firmly
+        print("Clicking the main 'Next' button to submit the account...")
+        
+        # Focus explicitly on the Next element inside the active signup card
+        submit_btn = page.locator("button:has-text('Next'), input[type='submit'], .next-btn").first
+        submit_btn.wait_for(state="visible", timeout=5000)
+        submit_btn.click()
+        print("-> Next button clicked successfully.")
 
-        # 5. Database Write Pipeline Verification
-        print("Data package successfully pushed to server. Holding workflow pipeline open for index processing latency...")
+        # 5. Database Write Buffer
+        print("Data package successfully pushed to server. Holding workflow pipeline open for index processing...")
         page.wait_for_load_state("networkidle")
-        time.sleep(12) 
+        time.sleep(12) # Give the database a solid 12 seconds to save the new user row
 
-        # Verify registration confirmation landing page
+        # 6. Verify User Exists
         confirmation_profile_endpoint = f"{BASE_URL}/users/{USERNAME}"
-        print(f"Routing headless runner to profile check zone: {confirmation_profile_endpoint}")
+        print(f"Routing headless runner to verification page check: {confirmation_profile_endpoint}")
         page.goto(confirmation_profile_endpoint, wait_until="networkidle")
         time.sleep(5)
         
-        print(f"Automation routine finalized. Terminal URL view state reads: {page.url}")
+        # Save a screenshot to the runner environment logs to verify page layout
+        page.screenshot(path="final_status.png")
+        print(f"Automation routine finalized. Terminal URL page view status reads: {page.url}")
         browser.close()
 
 if __name__ == "__main__":
