@@ -2,7 +2,7 @@ from playwright.sync_api import sync_playwright
 import time
 
 # Core Target Server Configuration URL
-BASE_URL = "https://greninja.xyz"
+BASE_URL = "https://ninja.greninja.xyz/"
 
 # CRITICAL REMINDER: You must change the username string value on the line below 
 # before EVERY single run, or the database will crash with a duplicate error!
