@@ -1,11 +1,11 @@
 from playwright.sync_api import sync_playwright
 import time
 
-# FIXED: Ensure the required secure transmission protocol prefix is completely declared
-BASE_URL = "https://greninja.xyz"
+# FIXED: Explicitly forced the correct 'ninja.' subdomain prefix right here
+BASE_URL = "https://ninja.greninja.xyz"
 
 # REMINDER: Alter this username string to a totally new value before every single test run
-USERNAME = "ninja_runner_v12" 
+USERNAME = "ninja_runner_v16" 
 PASSWORD = "SecurePassword123!"
 
 def create_account():
@@ -132,7 +132,6 @@ def create_account():
         # 5. Database Write Pipeline Verification
         print("Data package successfully pushed to server. Holding workflow pipeline open for index processing latency...")
         page.wait_for_load_state("networkidle")
-        # FIXED: Removed the invalid .skip assignment syntax that would break runtime interpretation
         time.sleep(12) 
 
         # Verify registration confirmation landing page
