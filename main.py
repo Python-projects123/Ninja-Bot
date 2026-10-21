@@ -1,14 +1,15 @@
 from playwright.sync_api import sync_playwright
 import time
 
-BASE_URL = "https://greninja.xyz"
-# REMINDER: Always change this to a brand-new username before launching a run!
-USERNAME = "ninja_tester_bot_01" 
+# FIXED: Hardcoded the accurate, working subdomain URL to completely prevent the DNS crash
+BASE_URL = "https://ninja.greninja.xyz"
+# REMINDER: Change this to a brand-new username on your code repository before every run!
+USERNAME = "ninja_tester_bot_05" 
 PASSWORD = "a-strong-password-123"
 
 def create_account():
     with sync_playwright() as p:
-        # Launch with automation evasion flags
+        # Launch with essential automation evasion flags
         browser = p.chromium.launch(
             headless=True,
             args=["--disable-blink-features=AutomationControlled"]
@@ -24,10 +25,9 @@ def create_account():
         page.goto(BASE_URL, wait_until="networkidle")
         time.sleep(2)
 
-        # STEP 1: Look for the banner "Join" button seen in your second screenshot
-        print("Locating the visual 'Join' button inside the main banner red zone...")
+        # STEP 1: Click the coral-colored "Join" button inside the main banner red zone
+        print("Locating the visual 'Join' button inside the main banner...")
         
-        # We try multiple precise structural paths to find the exact registration button
         join_button_selectors = [
             "button:has-text('Join')",
             "a:has-text('Join')",
@@ -45,23 +45,23 @@ def create_account():
                     target.click()
                     clicked_join = True
                     break
-            except Exception as e:
+            except:
                 continue
 
-        # Ultimate fallback fallback if the banner click fails to fire
+        # Ultimate fallback if the banner selector fails to fire
         if not clicked_join:
-            print("Banner button hidden from direct focus. Forcing navigation click on navbar header element...")
+            print("Banner button hidden from direct focus. Forcing click on navbar header link...")
             page.get_by_text("Join Ninja", exact=True).first.click()
 
-        # Await Modal box rendering animation frames
+        # Await Modal rendering animation frames
         page.wait_for_load_state("networkidle")
         time.sleep(3)
 
-        # STEP 2: Input your credentials inside the visual modal box seen in your third screenshot
+        # STEP 2: Input your credentials inside the visual modal box
         print("Entering account identification parameters...")
         
-        # Locate the inputs securely by searching via text context parent wrappers or labels
-        username_field = page.locator("input[placeholder*='Username'], input[id*='user'], label:has-text('username') + input").first
+        # Locate the inputs securely by searching via placeholders
+        username_field = page.locator("input[placeholder*='Username'], input[id*='user']").first
         username_field.wait_for(state="visible", timeout=5000)
         username_field.fill(USERNAME)
         print("-> Filled Username.")
@@ -72,7 +72,6 @@ def create_account():
             password_fields.nth(1).fill(PASSWORD)
             print("-> Filled both Password fields successfully.")
         else:
-            # Fallback search if the password boxes don't explicitly declare type='password'
             page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
             page.get_by_placeholder("Type password again").first.fill(PASSWORD)
             print("-> Filled password fields via placeholder fallbacks.")
@@ -102,8 +101,7 @@ def create_account():
                 continue
                 
         if not clicked_next:
-            # Complete physical fallback action if the button layout is structurally tricky
-            print("Button locator obscured. Dispatching universal hardware keyboard 'Enter' confirmation...")
+            print("Button locator obscured. Dispatching virtual 'Enter' confirmation...")
             page.keyboard.press("Enter")
 
         # STEP 4: Handle Step 2 transitions and check for secondary wizard fields
@@ -141,7 +139,7 @@ def create_account():
         page.wait_for_load_state("networkidle")
         time.sleep(10)
 
-        # Redirection check to make sure profile page doesn't throw a 'User not found' error
+        # Redirection check to confirm profile completion
         target_profile_url = f"{BASE_URL}/users/{USERNAME}"
         print(f"Navigating to confirmation URL: {target_profile_url}")
         page.goto(target_profile_url, wait_until="networkidle")
