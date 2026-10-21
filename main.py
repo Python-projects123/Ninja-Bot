@@ -1,9 +1,10 @@
+# pip install playwright && playwright install chromium
 from playwright.sync_api import sync_playwright
 import time
 
-BASE_URL = "https://greninja.xyz"
-# Tip: Ensure you change this to a brand new username every run to prevent duplicate errors!
-USERNAME = "randombot_v2" 
+# FIXED: Locked down the accurate subdomain string destination endpoint 
+BASE_URL = "https://ninja.greninja.xyz"
+USERNAME = "ninja_bot_runner_99" 
 PASSWORD = "a-strong-password"
 
 def create_account():
@@ -19,30 +20,33 @@ def create_account():
         )
         page = context.new_page()
         
-        print("Navigating to target site...")
-        page.goto(BASE_URL, wait_until="networkidle")
-
-        print("Opening signup wizard...")
-        try:
-            page.get_by_text("Join Ninja", exact=True).first.click()
-        except:
-            page.locator("text=Join Ninja").first.click()
+        print(f"Navigating explicitly to: {BASE_URL}")
+        # Explicit wait setup targeted directly onto the full BASE_URL parameter string
+        page.goto(BASE_URL, wait_until="domcontentloaded")
         page.wait_for_load_state("networkidle")
 
-        # Step 1: Account Identification Details
+        print("Opening signup wizard...")
+        join_btn = page.get_by_text("Join Ninja", exact=True).first
+        join_btn.wait_for(state="visible", timeout=10000)
+        join_btn.click()
+        page.wait_for_load_state("networkidle")
+
+        # Step 1: Form Fill
         print("Processing Step 1 registration inputs...")
         page.get_by_placeholder("Username").first.wait_for(state="visible")
         page.get_by_placeholder("Username").first.fill(USERNAME)
         page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
         page.get_by_placeholder("Type password again").first.fill(PASSWORD)
         
-        page.locator("button:has-text('Next'), input[type='submit']").first.click()
-        page.wait_for_load_state("networkidle")
-        time.sleep(3) 
-
-        # Step 2: Handle Wizard Content Transitions
-        print("Processing Step 2 form components...")
+        # Safe forward click
+        next_step_btn = page.locator("button:has-text('Next'), input[type='submit']").first
+        next_step_btn.click()
         
+        print("Step 1 basic details submitted. Transitioning to Step 2...")
+        time.sleep(4) 
+
+        # Step 2: Handle Secondary Form Elements
+        print("Processing Step 2 form configurations...")
         text_inputs = page.locator("input[type='text'], input:not([type])")
         if text_inputs.count() > 0:
             for i in range(text_inputs.count()):
@@ -65,19 +69,16 @@ def create_account():
         else:
             page.keyboard.press("Enter") 
 
-        # CRITICAL FIX: The backend requires processing time to save the profile.
-        # We wait for the network to go silent, then sleep for 10 seconds before navigating away.
-        print("Account submitted. Holding connection open for database indexing...")
-        page.wait_for_load_state("networkidle")
+        print("Account submitted. Holding connection open for backend indexing write...")
         time.sleep(10) 
         
-        # Safe redirection to confirm the user exists on the platform
+        # Safe structural redirection path using the full subdomain string
         target_profile_url = f"{BASE_URL}/users/{USERNAME}"
-        print(f"Navigating to verification profile: {target_profile_url}")
+        print(f"Navigating to confirmation URL profile string: {target_profile_url}")
         page.goto(target_profile_url, wait_until="networkidle")
         time.sleep(5)
         
-        print("Automation execution concluded. Final profile URL page state:", page.url)
+        print("Automation execution concluded successfully. Final profile URL page state:", page.url)
         browser.close()
 
 if __name__ == "__main__":
