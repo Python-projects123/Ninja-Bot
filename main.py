@@ -2,18 +2,17 @@ from playwright.sync_api import sync_playwright
 import time
 
 BASE_URL = "https://greninja.xyz"
-USERNAME = "randombot"
-PASSWORD = "bot"
+# Tip: Ensure you change this to a brand new username every run to prevent duplicate errors!
+USERNAME = "randombot_v2" 
+PASSWORD = "a-strong-password"
 
 def create_account():
     with sync_playwright() as p:
-        # Launch with custom user args to prevent cloud bot blocking
         browser = p.chromium.launch(
             headless=True,
             args=["--disable-blink-features=AutomationControlled"]
         )  
         
-        # Set a standard desktop window size and realistic browser identity
         context = browser.new_context(
             viewport={"width": 1280, "height": 720},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -21,62 +20,29 @@ def create_account():
         page = context.new_page()
         
         print("Navigating to target site...")
+        page.goto(BASE_URL, wait_until="networkidle")
+
+        print("Opening signup wizard...")
         try:
-            page.goto(BASE_URL, wait_until="domcontentloaded", timeout=30000)
-        except Exception as e:
-            print(f"Initial navigation warning: {e}. Trying alternative wait step...")
-
-        # Safe search locator loop for the introductory registration portal button
-        print("Locating signup wizard trigger button...")
-        join_selectors = [
-            "text=Join Ninja", 
-            "button:has-text('Join')", 
-            "a:has-text('Join')",
-            ".join-btn"
-        ]
-        
-        join_btn = None
-        for selector in join_selectors:
-            try:
-                el = page.locator(selector).first
-                if el.count() > 0 and el.is_visible():
-                    join_btn = el
-                    break
-            except:
-                continue
-
-        if join_btn:
-            join_btn.click()
-            print("Successfully entered signup wizard portal step.")
-        else:
-            print("Warning: Standard 'Join' elements hidden. Attempting to proceed assuming form is open.")
-
-        time.sleep(3) # Safe buffer pause for DOM rendering animations
+            page.get_by_text("Join Ninja", exact=True).first.click()
+        except:
+            page.locator("text=Join Ninja").first.click()
+        page.wait_for_load_state("networkidle")
 
         # Step 1: Account Identification Details
         print("Processing Step 1 registration inputs...")
-        try:
-            user_input = page.get_by_placeholder("Username").first
-            user_input.wait_for(state="attached", timeout=5000)
-            user_input.fill(USERNAME)
-            
-            page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
-            page.get_by_placeholder("Type password again").first.fill(PASSWORD)
-            
-            next_step_btn = page.locator("button:has-text('Next'), input[type='submit'], .next-btn").first
-            next_step_btn.click()
-            print("Step 1 basic details submitted successfully.")
-        except Exception as e:
-            print(f"Step 1 input exception crashed: {e}")
-            browser.close()
-            return
+        page.get_by_placeholder("Username").first.wait_for(state="visible")
+        page.get_by_placeholder("Username").first.fill(USERNAME)
+        page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
+        page.get_by_placeholder("Type password again").first.fill(PASSWORD)
+        
+        page.locator("button:has-text('Next'), input[type='submit']").first.click()
+        page.wait_for_load_state("networkidle")
+        time.sleep(3) 
 
-        # Step 2: Handle Secondary Wizard Content Transitions Safely
-        print("Awaiting Step 2 backend wizard elements...")
-        time.sleep(4) 
-        print("Active page location position:", page.url)
-
-        # Catch-all input query selectors to handle variable Step 2 fields dynamically
+        # Step 2: Handle Wizard Content Transitions
+        print("Processing Step 2 form components...")
+        
         text_inputs = page.locator("input[type='text'], input:not([type])")
         if text_inputs.count() > 0:
             for i in range(text_inputs.count()):
@@ -99,8 +65,19 @@ def create_account():
         else:
             page.keyboard.press("Enter") 
 
-        time.sleep(4)
-        print("Automation execution concluded. Terminal page url status:", page.url)
+        # CRITICAL FIX: The backend requires processing time to save the profile.
+        # We wait for the network to go silent, then sleep for 10 seconds before navigating away.
+        print("Account submitted. Holding connection open for database indexing...")
+        page.wait_for_load_state("networkidle")
+        time.sleep(10) 
+        
+        # Safe redirection to confirm the user exists on the platform
+        target_profile_url = f"{BASE_URL}/users/{USERNAME}"
+        print(f"Navigating to verification profile: {target_profile_url}")
+        page.goto(target_profile_url, wait_until="networkidle")
+        time.sleep(5)
+        
+        print("Automation execution concluded. Final profile URL page state:", page.url)
         browser.close()
 
 if __name__ == "__main__":
