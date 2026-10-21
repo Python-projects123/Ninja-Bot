@@ -3,19 +3,20 @@ import time
 import random
 import string
 
-# GUARANTEED CORRECT URL
+# GUARANTEED SUBDOMAIN TARGET
 BASE_URL = "https://ninja.greninja.xyz"
-PASSWORD = "SecurePassword123!"
 
-def generate_random_username():
-    """Generates a unique username to guarantee the account doesn't already exist."""
+# FIXED: Using a standard, universally acceptable alphanumeric password string
+PASSWORD = "NinjaBotPassword99"
+
+def generate_clean_username():
+    """Generates a clean username WITHOUT underscores to prevent database validation drops."""
     random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-    return f"bot_runner_{random_suffix}"
+    return f"ninjabot{random_suffix}" # Example output: ninjabota1b2c3
 
 def create_account():
-    # Dynamic username generation
-    USERNAME = generate_random_username()
-    print(f"Generated Unique Username for this run: {USERNAME}")
+    USERNAME = generate_clean_username()
+    print(f"Generated Clean Username for this run: {USERNAME}")
 
     with sync_playwright() as p:
         print("Launching automated browser...")
@@ -30,55 +31,48 @@ def create_account():
         )
         page = context.new_page()
         
-        # 1. Navigate directly to the verified URL
-        print(f"Navigating to: {BASE_URL}")
+        print(f"Navigating directly to: {BASE_URL}")
         page.goto(BASE_URL, wait_until="networkidle")
         time.sleep(3)
 
-        # 2. Click the specific visual "Join" button in the red banner
-        print("Clicking the 'Join' button inside the banner section...")
+        print("Clicking the signup navigation link fallback...")
         try:
-            page.locator("div.banner button:has-text('Join')").first.click()
-            print("Signup modal open.")
-        except Exception as e:
-            print(f"Banner element target missed ({e}). Trying navbar text selection fallback...")
             page.get_by_text("Join Ninja", exact=True).first.click()
+            print("Signup modal overlay box triggered.")
+        except Exception as e:
+            print(f"Click failed ({e}). Attempting structural banner button path extraction...")
+            page.locator("div.banner button:has-text('Join')").first.click()
 
-        # Wait for form modal rendering frames
         page.wait_for_load_state("networkidle")
         time.sleep(3)
 
         # ====================================================
-        # INPUT SECTION: TYPING DELAYS FOR ACCURATE HOOKS
+        # INPUT SECTION: CHARACTER-BY-CHARACTER TYPING
         # ====================================================
-        print("Locating form fields...")
+        print("Locating form fields inside the active signup modal...")
         username_field = page.locator("input[placeholder*='Username'], input[id*='user']").first
         username_field.wait_for(state="visible", timeout=10000)
         
-        # Focus and type the username character-by-character
+        # Click, focus, and type credentials safely
         username_field.click()
-        print("Typing username...")
         for char in USERNAME:
             page.keyboard.type(char)
-            time.sleep(random.uniform(0.05, 0.15))
+            time.sleep(random.uniform(0.05, 0.12))
 
         password_slots = page.locator("input[type='password']")
         if password_slots.count() >= 2:
-            print("Twin password inputs found. Entering values...")
-            
-            # Type into password block 1
+            # Fill slot 1
             password_slots.nth(0).click()
             for char in PASSWORD:
                 page.keyboard.type(char)
-                time.sleep(random.uniform(0.05, 0.12))
+                time.sleep(random.uniform(0.04, 0.10))
                 
-            # Type into confirm password block 2
+            # Fill slot 2 (confirm password)
             password_slots.nth(1).click()
             for char in PASSWORD:
                 page.keyboard.type(char)
-                time.sleep(random.uniform(0.05, 0.12))
+                time.sleep(random.uniform(0.04, 0.10))
         else:
-            print("Fallback to placeholder selectors...")
             p1 = page.get_by_placeholder("Password", exact=True).first
             p1.click()
             p1.fill(PASSWORD)
@@ -90,28 +84,28 @@ def create_account():
         time.sleep(2)
 
         # ====================================================
-        # SUBMISSION & DATABASE SYNCHRONIZATION
+        # EXPLICIT ACCOUNT REGISTRATION SUBMISSION
         # ====================================================
-        print("Clicking 'Next' button...")
+        print("Locating submission button...")
         next_button = page.locator("button:has-text('Next'), input[type='submit'], .next-btn").first
         next_button.wait_for(state="visible", timeout=5000)
+        
+        print("Submitting the account credentials package...")
         next_button.click()
-        print("Data bundle sent.")
-
-        # Give the backend database 15 seconds to safely save and index the account profile parameters
-        print("Holding connection open to allow backend database index synchronization...")
+        
+        # Give the server a clear 15 seconds to safely register and save the user rows
+        print("Holding runtime process alive for backend write synchronization...")
         page.wait_for_load_state("networkidle")
         time.sleep(15) 
 
-        # 3. Direct Navigation to Verification Profile Link
+        # 3. Validation Link Check
         target_profile_url = f"{BASE_URL}/users/{USERNAME}"
-        print(f"Navigating to verification profile link: {target_profile_url}")
+        print(f"Navigating directly to check profile validation: {target_profile_url}")
         page.goto(target_profile_url, wait_until="networkidle")
         time.sleep(5)
         
-        # Capture screenshot verification artifact for your Action workspace logs
         page.screenshot(path="final_verified_status.png")
-        print(f"Routine complete. Final profile landing page state reads: {page.url}")
+        print(f"Automation execution concluded. Terminal page url read state: {page.url}")
         browser.close()
 
 if __name__ == "__main__":
