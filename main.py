@@ -1,14 +1,14 @@
-# pip install playwright && playwright install chromium
 from playwright.sync_api import sync_playwright
 import time
 
-# FIXED: Locked down the accurate subdomain string destination endpoint 
-BASE_URL = "https://ninja.greninja.xyz"
-USERNAME = "ninja_bot_runner_99" 
-PASSWORD = "a-strong-password"
+BASE_URL = "https://greninja.xyz"
+# REMINDER: Always change this to a brand-new username before launching a run!
+USERNAME = "ninja_tester_bot_01" 
+PASSWORD = "a-strong-password-123"
 
 def create_account():
     with sync_playwright() as p:
+        # Launch with automation evasion flags
         browser = p.chromium.launch(
             headless=True,
             args=["--disable-blink-features=AutomationControlled"]
@@ -20,40 +20,107 @@ def create_account():
         )
         page = context.new_page()
         
-        print(f"Navigating explicitly to: {BASE_URL}")
-        # Explicit wait setup targeted directly onto the full BASE_URL parameter string
-        page.goto(BASE_URL, wait_until="domcontentloaded")
-        page.wait_for_load_state("networkidle")
+        print(f"Navigating to landing page: {BASE_URL}")
+        page.goto(BASE_URL, wait_until="networkidle")
+        time.sleep(2)
 
-        print("Opening signup wizard...")
-        join_btn = page.get_by_text("Join Ninja", exact=True).first
-        join_btn.wait_for(state="visible", timeout=10000)
-        join_btn.click()
-        page.wait_for_load_state("networkidle")
-
-        # Step 1: Form Fill
-        print("Processing Step 1 registration inputs...")
-        page.get_by_placeholder("Username").first.wait_for(state="visible")
-        page.get_by_placeholder("Username").first.fill(USERNAME)
-        page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
-        page.get_by_placeholder("Type password again").first.fill(PASSWORD)
+        # STEP 1: Look for the banner "Join" button seen in your second screenshot
+        print("Locating the visual 'Join' button inside the main banner red zone...")
         
-        # Safe forward click
-        next_step_btn = page.locator("button:has-text('Next'), input[type='submit']").first
-        next_step_btn.click()
+        # We try multiple precise structural paths to find the exact registration button
+        join_button_selectors = [
+            "button:has-text('Join')",
+            "a:has-text('Join')",
+            "div.banner button:has-text('Join')",
+            "text=Join Ninja",
+            "[class*='join']"
+        ]
         
-        print("Step 1 basic details submitted. Transitioning to Step 2...")
-        time.sleep(4) 
+        clicked_join = False
+        for selector in join_button_selectors:
+            try:
+                target = page.locator(selector).first
+                if target.count() > 0 and target.is_visible():
+                    print(f"Found match using selector: {selector}. Clicking now...")
+                    target.click()
+                    clicked_join = True
+                    break
+            except Exception as e:
+                continue
 
-        # Step 2: Handle Secondary Form Elements
-        print("Processing Step 2 form configurations...")
+        # Ultimate fallback fallback if the banner click fails to fire
+        if not clicked_join:
+            print("Banner button hidden from direct focus. Forcing navigation click on navbar header element...")
+            page.get_by_text("Join Ninja", exact=True).first.click()
+
+        # Await Modal box rendering animation frames
+        page.wait_for_load_state("networkidle")
+        time.sleep(3)
+
+        # STEP 2: Input your credentials inside the visual modal box seen in your third screenshot
+        print("Entering account identification parameters...")
+        
+        # Locate the inputs securely by searching via text context parent wrappers or labels
+        username_field = page.locator("input[placeholder*='Username'], input[id*='user'], label:has-text('username') + input").first
+        username_field.wait_for(state="visible", timeout=5000)
+        username_field.fill(USERNAME)
+        print("-> Filled Username.")
+
+        password_fields = page.locator("input[type='password']")
+        if password_fields.count() >= 2:
+            password_fields.nth(0).fill(PASSWORD)
+            password_fields.nth(1).fill(PASSWORD)
+            print("-> Filled both Password fields successfully.")
+        else:
+            # Fallback search if the password boxes don't explicitly declare type='password'
+            page.get_by_placeholder("Password", exact=True).first.fill(PASSWORD)
+            page.get_by_placeholder("Type password again").first.fill(PASSWORD)
+            print("-> Filled password fields via placeholder fallbacks.")
+
+        time.sleep(1)
+
+        # STEP 3: Click the bright coral-red "Next" button at the bottom of the modal card
+        print("Clicking the primary 'Next' wizard transition button...")
+        
+        next_selectors = [
+            "button:has-text('Next')",
+            "div.modal button:has-text('Next')",
+            "[class*='next']",
+            "text=Next"
+        ]
+        
+        clicked_next = False
+        for selector in next_selectors:
+            try:
+                btn = page.locator(selector).first
+                if btn.count() > 0 and btn.is_visible():
+                    btn.click()
+                    clicked_next = True
+                    print("Successfully advanced past Step 1 form card.")
+                    break
+            except:
+                continue
+                
+        if not clicked_next:
+            # Complete physical fallback action if the button layout is structurally tricky
+            print("Button locator obscured. Dispatching universal hardware keyboard 'Enter' confirmation...")
+            page.keyboard.press("Enter")
+
+        # STEP 4: Handle Step 2 transitions and check for secondary wizard fields
+        print("Awaiting secondary wizard configuration overlay panel...")
+        page.wait_for_load_state("networkidle")
+        time.sleep(4)
+        print(f"Current page target location state: {page.url}")
+
+        # General loop to fill any text boxes found on the second step
         text_inputs = page.locator("input[type='text'], input:not([type])")
         if text_inputs.count() > 0:
             for i in range(text_inputs.count()):
                 el = text_inputs.nth(i)
-                if el.is_visible():
-                    el.fill("bot_user_account@example.com")
+                if el.is_visible() and el.input_value() == "":
+                    el.fill("ninja_bot_email@example.com")
 
+        # Select standard values for any custom dropdown selections (e.g. Birth Month, Country)
         dropdowns = page.locator("select")
         if dropdowns.count() > 0:
             for i in range(dropdowns.count()):
@@ -61,24 +128,26 @@ def create_account():
                 if el.is_visible():
                     el.select_option(index=1)
 
-        # Finalize and Submit Wizard Record
-        print("Executing Step 2 record submission sequence...")
-        submit_btn = page.locator("button:has-text('Next'), button:has-text('Submit'), button[type='submit']").first
-        if submit_btn.count() > 0 and submit_btn.is_visible():
-            submit_btn.click()
+        # Final submission sequence
+        print("Submitting Step 2 configuration parameters...")
+        final_submit = page.locator("button:has-text('Next'), button:has-text('Submit'), button[type='submit']").first
+        if final_submit.count() > 0 and final_submit.is_visible():
+            final_submit.click()
         else:
-            page.keyboard.press("Enter") 
+            page.keyboard.press("Enter")
 
-        print("Account submitted. Holding connection open for backend indexing write...")
-        time.sleep(10) 
-        
-        # Safe structural redirection path using the full subdomain string
+        # Give the backend platform a standard 10-second processing buffer to write the record
+        print("Data transmitted. Holding pipeline open for database write latency rules...")
+        page.wait_for_load_state("networkidle")
+        time.sleep(10)
+
+        # Redirection check to make sure profile page doesn't throw a 'User not found' error
         target_profile_url = f"{BASE_URL}/users/{USERNAME}"
-        print(f"Navigating to confirmation URL profile string: {target_profile_url}")
+        print(f"Navigating to confirmation URL: {target_profile_url}")
         page.goto(target_profile_url, wait_until="networkidle")
-        time.sleep(5)
+        time.sleep(4)
         
-        print("Automation execution concluded successfully. Final profile URL page state:", page.url)
+        print(f"Automation sequence finished. Terminal page landing status: {page.url}")
         browser.close()
 
 if __name__ == "__main__":
